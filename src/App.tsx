@@ -127,7 +127,7 @@ export default function App() {
     setIsAdminLoading(true);
     setAdminFetchError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/waitlist');
+      const response = await fetch('/api/waitlist');
       if (response.ok) {
         const data = await response.json();
         setWaitlistEmails(data);

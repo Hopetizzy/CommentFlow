@@ -86,7 +86,7 @@ export function LandingPage({ onLaunchApp }: LandingPageProps) {
     setWaitlistSuccess(false);
 
     try {
-      const response = await fetch('http://localhost:5000/api/waitlist', {
+      const response = await fetch('/api/waitlist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
