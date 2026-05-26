@@ -1,7 +1,24 @@
-import { kv } from '@vercel/kv';
+import { list, put } from '@vercel/blob';
+
+async function getWaitlist() {
+  try {
+    const { blobs } = await list();
+    const fileBlob = blobs.find(b => b.pathname === 'emails.json');
+    if (!fileBlob) return { waitlist: [], url: null };
+
+    const res = await fetch(fileBlob.url);
+    if (res.ok) {
+      const waitlist = await res.json();
+      return { waitlist, url: fileBlob.url };
+    }
+  } catch (err) {
+    console.error("Error reading blob waitlist:", err);
+  }
+  return { waitlist: [], url: null };
+}
 
 export default async function handler(req, res) {
-  // Bulletproof CORS headers for flexibility
+  // CORS headers for flex integration
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -20,8 +37,10 @@ export default async function handler(req, res) {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
-      // Check if email already exists in Vercel KV Set
-      const exists = await kv.sismember('commentflow_emails_set', cleanEmail);
+      const { waitlist } = await getWaitlist();
+
+      // Check duplicates
+      const exists = waitlist.some(item => item.email === cleanEmail);
       if (exists) {
         return res.status(409).json({ error: 'This email is already registered.' });
       }
@@ -31,37 +50,29 @@ export default async function handler(req, res) {
         timestamp: new Date().toISOString()
       };
 
-      // Add to set (for quick duplicate check)
-      await kv.sadd('commentflow_emails_set', cleanEmail);
-      
-      // Push to list (to preserve chronological order)
-      await kv.rpush('commentflow_emails_list', JSON.stringify(entry));
+      waitlist.push(entry);
+
+      // Upload and overwrite emails.json in Vercel Blob
+      await put('emails.json', JSON.stringify(waitlist, null, 2), {
+        access: 'public',
+        addRandomSuffix: false,
+        contentType: 'application/json'
+      });
 
       return res.status(201).json({ message: 'Success! You have joined the waitlist.', entry });
     } catch (error) {
-      console.error('Vercel KV POST error:', error);
-      return res.status(500).json({ error: 'Database storage error. Please check your KV config.' });
+      console.error('Vercel Blob POST error:', error);
+      return res.status(500).json({ error: 'Database storage error. Please check your Blob store configuration.' });
     }
   }
 
   if (req.method === 'GET') {
     try {
-      // Fetch all entries from chronological list
-      const list = await kv.lrange('commentflow_emails_list', 0, -1);
-      
-      // Parse items since they are stored as JSON strings
-      const parsed = list.map(item => {
-        try {
-          return typeof item === 'string' ? JSON.parse(item) : item;
-        } catch (e) {
-          return { email: item, timestamp: new Date().toISOString() };
-        }
-      });
-
-      return res.status(200).json(parsed);
+      const { waitlist } = await getWaitlist();
+      return res.status(200).json(waitlist);
     } catch (error) {
-      console.error('Vercel KV GET error:', error);
-      return res.status(500).json({ error: 'Database retrieval error. Please check your KV config.' });
+      console.error('Vercel Blob GET error:', error);
+      return res.status(500).json({ error: 'Database retrieval error.' });
     }
   }
 
