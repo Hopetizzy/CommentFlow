@@ -1,0 +1,6 @@
+{
+  "name": "CommentFlow",
+  "description": "Transform messy social media comments into pure AI-ready text lines and customizable social-style comment cards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

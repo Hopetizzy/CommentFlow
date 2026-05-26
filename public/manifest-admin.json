@@ -1,0 +1,25 @@
+{
+  "name": "CommentFlow Admin",
+  "short_name": "CF Admin",
+  "description": "Admin database access log portal for CommentFlow waitlist emails.",
+  "start_url": "/db-admin",
+  "display": "standalone",
+  "background_color": "#070709",
+  "theme_color": "#070709",
+  "orientation": "portrait",
+  "categories": ["utilities"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
